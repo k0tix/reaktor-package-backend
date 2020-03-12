@@ -9,6 +9,7 @@ const config = require('./config');
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static('build'));
 
 const parsePackages = require('./utils/packageParser');
 

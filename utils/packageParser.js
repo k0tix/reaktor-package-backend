@@ -11,13 +11,12 @@ async function parsePackages(filePath) {
 
     let currentPackage = {};
     let currentKey = '';
-    let packages = [];
+    let packageMap = new Map();
 
     for await (const line of openedFile) {
         // Currently parsed package finished
         if (line.length === 0) {
-            packages.push(currentPackage);
-
+            packageMap.set(currentPackage.package, currentPackage);
             currentPackage = {};
             currentKey = '';
             continue;
@@ -27,20 +26,50 @@ async function parsePackages(filePath) {
         let value = line.slice(separatorIndex + 2);
 
         if (line.charAt(0) === ' ') {
-            currentPackage[currentKey] += value;
+            currentPackage[currentKey] += '\n' + value;
         } else {
-            const lineKey = line.slice(0, separatorIndex);
+            const lineKey = line.slice(0, separatorIndex).toLowerCase();
 
-            currentPackage[lineKey] = lineKey === 'Depends' ? rmVersionsAndDuplicates(value) : value;
+            currentPackage[lineKey] = lineKey === 'depends' ? rmVersionsAndDuplicates(value) : value;
             currentKey = lineKey;
         }
     }
 
-    return packages;
+    let packageList = Array.from(packageMap, ([_key, value]) => value);
+    return packageList.map(p => formatPackage(packageMap, packageList, p));
 }
 
 const rmVersionsAndDuplicates = (dependencies) => {
     return [...new Set(dependencies.split(/, | \| /).map((pkg) => pkg.split(' ')[0]))];
+};
+
+const formatPackage = (packageMap, packageList, package) => {
+    let newPackage = { name: package.package, description: package.description };
+
+    let [dependencies, alternatives] = separateDepenciesAndAlternatives(packageMap, package);
+    newPackage.dependencies = dependencies;
+    newPackage.alternatives = alternatives;
+
+    newPackage.reverseDependencies = mapReverseDependencies(packageList, package);
+
+    return newPackage;
+};
+
+const mapReverseDependencies = (packageList, package) => {
+    return packageList
+        .filter(p => p.depends !== undefined ? p.depends.includes(package.package) : false)
+        .map(p => p.package);
+};
+
+const separateDepenciesAndAlternatives = (packageMap, package) => {
+    let dependencies = [];
+    let alternatives = [];
+
+    package.depends !== undefined
+        ? package.depends.forEach((p) => packageMap.has(p) ? dependencies.push(p) : alternatives.push(p))
+        : [];
+
+    return [dependencies, alternatives];
 };
 
 module.exports = parsePackages;

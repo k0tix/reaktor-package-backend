@@ -3,9 +3,11 @@ const http = require('http');
 const express = require('express');
 
 const app = express();
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const config = require('./config');
 
+app.use(cors());
 app.use(bodyParser.json());
 
 const parsePackages = require('./utils/packageParser');
@@ -17,7 +19,7 @@ console.log(`Using file at '${filePath}' for parsing`);
 // Start express application after the file has been parsed
 parsePackages(filePath).then((result) => {
     app.get('/api/packages', async (req, res) => {
-        res.status(200).send(result.sort((a, b) => a.Package.localeCompare(b.Package)));
+        res.status(200).send(result);
     });
 
     // Handle all other endpoints

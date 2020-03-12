@@ -9,6 +9,7 @@
     "watch": "cross-env NODE_ENV=development nodemon index.js",
     "build:ui": "rm -rf build && cd ../reaktor-package-frontend && npm run build --prod && cp -r build ../reaktor-package-backend/",
     "deploy": "git push heroku master",
+    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push && npm run deploy",
     "lint": "eslint ."
   },
   "author": "Otto Pirttimaa",
